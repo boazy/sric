@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ssri = "9.2.0"
 ureq = { version = "2.9.7", features = ["tls", "native-certs"] }
 mime = "0.3.17"
 mime_guess = "2.0.5"
