@@ -1,7 +1,7 @@
-use std::fs::File;
-use std::path::PathBuf;
 use anyhow::Context;
-use structopt::StructOpt;
+use clap::Parser;
+use clio::{InputPath, OutputPath};
+
 use crate::generate_sri::update_sri_for_dom;
 use crate::write_html::write_html;
 
@@ -13,42 +13,44 @@ mod element;
 mod mime_ext;
 mod response_ext;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "sric", about = "Automatically generate Subresource Integrity (SRI) hashes for HTML files.")]
+#[derive(Debug, Parser)]
+#[command(version, name = "sric", about = "Automatically generate Subresource Integrity (SRI) hashes for HTML files.")]
 struct Opts {
     /// Input file
-    #[structopt(parse(from_os_str), name = "INPUT_FILE")]
-    input: PathBuf,
+    #[arg(value_parser, name = "INPUT_FILE")]
+    input: InputPath,
 
-    #[structopt(short, long, help = "Write the SRI hashes to the file in-place")]
+    #[arg(short, long, group = "output", help = "Write the SRI hashes to the file in-place")]
     write: bool,
 
-    #[structopt(parse(from_os_str), short, long, help="Output file", name = "OUTPUT_FILE")]
-    output: Option<PathBuf>,
+    #[arg(value_parser, short, long, default_value = "-", group = "output", help="Output file", name = "OUTPUT_FILE")]
+    output: OutputPath,
 
-    #[structopt(short, long, help = "Override existing SRI hashes")]
+    #[arg(short, long, help = "Override existing SRI hashes")]
     force: bool,
 }
 
 fn main() -> anyhow::Result<()> {
-    let opts = Opts::from_args();
-    let mut dom = parse_html::parse_html(&opts.input)?;
+    let opts = Opts::parse();
+    let mut dom = parse_html::parse_html(opts.input.clone())?;
 
-    let output_filename = if opts.write {
-        Some(opts.input.clone())
+    let output = if opts.write {
+        let input = opts.input;
+        if input.is_std() {
+            OutputPath::std()
+        } else {
+            let path = input.path().as_os_str();
+            OutputPath::new(path)?
+        }
     } else {
         opts.output
     };
 
     update_sri_for_dom(&mut dom, opts.force);
 
-    if let Some(output_filename) = &output_filename {
-        let output = File::create(output_filename)
-            .with_context(|| format!("Failed to create file {:?}", output_filename))?;
-        write_html(output, dom)?;
-    } else {
-        write_html(std::io::stdout(), dom)?;
-    };
+    let output_file = output.clone().create()
+        .with_context(|| format!("Failed to create file {}", output))?;
+    write_html(output_file, dom)?;
 
     Ok(())
 }
