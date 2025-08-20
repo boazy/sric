@@ -2,6 +2,15 @@
 name = "sric"
 version = "0.1.0"
 edition = "2021"
+authors = ["Boaz Yaniv"]
+description = "A Rust CLI tool that automatically generates Subresource Integrity (SRI) hashes for HTML files"
+license = "MIT"
+repository = "https://github.com/boaz-yaniv/sric"
+homepage = "https://github.com/boaz-yaniv/sric"
+documentation = "https://docs.rs/sric"
+keywords = ["sri", "html", "security", "cli"]
+categories = ["command-line-utilities", "web-programming", "cryptography"]
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4", features = ["default", "derive"]}
